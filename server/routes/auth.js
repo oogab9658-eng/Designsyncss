@@ -18,7 +18,7 @@ router.post('/register', (req, res) => {
 // @route   POST api/auth/login
 router.post('/login', (req, res) => {
   const { email, password } = req.body;
-  const user = users.find(u => u.email === email && u.password === password);
+  const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
   if (!user) return res.status(400).json({ msg: 'Invalid Credentials' });
 
   const payload = { user: { id: user.id, role: user.role } };
