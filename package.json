@@ -1,0 +1,18 @@
+{
+  "name": "designsyncs-crm",
+  "version": "1.0.0",
+  "description": "Full-stack CRM for Designsyncs",
+  "private": true,
+  "scripts": {
+    "install-all": "npm install && cd client && npm install && cd ../server && npm install",
+    "client-install": "cd client && npm install",
+    "server-install": "cd server && npm install",
+    "build": "cd client && npm install && npm run build",
+    "server": "cd server && npm start",
+    "client": "cd client && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
