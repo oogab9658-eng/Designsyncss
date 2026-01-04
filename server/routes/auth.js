@@ -22,7 +22,8 @@ router.post('/login', (req, res) => {
   if (!user) return res.status(400).json({ msg: 'Invalid Credentials' });
 
   const payload = { user: { id: user.id, role: user.role } };
-  jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: 360000 }, (err, token) => {
+  const jwtSecret = process.env.JWT_SECRET || 'fallbacksecret123';
+  jwt.sign(payload, jwtSecret, { expiresIn: 360000 }, (err, token) => {
     if (err) throw err;
     res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   });
