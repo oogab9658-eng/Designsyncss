@@ -1,45 +1,38 @@
 const express = require('express');
 const router = express.Router();
-const Task = require('../models/Task');
 const auth = require('../middleware/auth');
 
+// In-memory tasks array (for demo, no persistence)
+let tasks = [
+  { _id: '1', title: 'Sample Task', description: 'This is a sample task', status: 'pending', dueDate: '2026-01-10', client: '1', assignedTo: 1, createdAt: new Date() }
+];
+
 // Get tasks
-router.get('/', auth, async (req, res) => {
-  try {
-    const tasks = await Task.find({ assignedTo: req.user.id }).populate('client', 'name').sort({ createdAt: -1 });
-    res.json(tasks);
-  } catch (err) {
-    res.status(500).send('Server Error');
-  }
+router.get('/', auth, (req, res) => {
+  const userTasks = tasks.filter(task => task.assignedTo === req.user.id);
+  res.json(userTasks);
 });
 
 // Add task
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, (req, res) => {
   const { title, description, status, dueDate, client } = req.body;
-  try {
-    const newTask = new Task({
-      title, description, status, dueDate, client,
-      assignedTo: req.user.id
-    });
-    const task = await newTask.save();
-    res.json(task);
-  } catch (err) {
-    res.status(500).send('Server Error');
-  }
+  const newTask = {
+    _id: Date.now().toString(),
+    title, description, status, dueDate, client,
+    assignedTo: req.user.id,
+    createdAt: new Date()
+  };
+  tasks.push(newTask);
+  res.json(newTask);
 });
 
 // Update task status
-router.patch('/:id', auth, async (req, res) => {
-  try {
-    let task = await Task.findById(req.params.id);
-    if (!task) return res.status(404).json({ msg: 'Task not found' });
-    
-    task.status = req.body.status || task.status;
-    await task.save();
-    res.json(task);
-  } catch (err) {
-    res.status(500).send('Server Error');
-  }
+router.patch('/:id', auth, (req, res) => {
+  const task = tasks.find(t => t._id === req.params.id && t.assignedTo === req.user.id);
+  if (!task) return res.status(404).json({ msg: 'Task not found' });
+  
+  task.status = req.body.status || task.status;
+  res.json(task);
 });
 
 module.exports = router;

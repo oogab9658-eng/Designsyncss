@@ -1,45 +1,38 @@
 const express = require('express');
 const router = express.Router();
-const Client = require('../models/Client');
 const auth = require('../middleware/auth');
 
+// In-memory clients array (for demo, no persistence)
+let clients = [
+  { _id: '1', name: 'Sample Client', email: 'client@example.com', phone: '123-456-7890', company: 'Sample Co', status: 'active', createdBy: 1, createdAt: new Date() }
+];
+
 // Get all clients
-router.get('/', auth, async (req, res) => {
-  try {
-    const clients = await Client.find({ createdBy: req.user.id }).sort({ createdAt: -1 });
-    res.json(clients);
-  } catch (err) {
-    res.status(500).send('Server Error');
-  }
+router.get('/', auth, (req, res) => {
+  const userClients = clients.filter(client => client.createdBy === req.user.id);
+  res.json(userClients);
 });
 
 // Add client
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, (req, res) => {
   const { name, email, phone, company, status } = req.body;
-  try {
-    const newClient = new Client({
-      name, email, phone, company, status,
-      createdBy: req.user.id
-    });
-    const client = await newClient.save();
-    res.json(client);
-  } catch (err) {
-    res.status(500).send('Server Error');
-  }
+  const newClient = {
+    _id: Date.now().toString(),
+    name, email, phone, company, status,
+    createdBy: req.user.id,
+    createdAt: new Date()
+  };
+  clients.push(newClient);
+  res.json(newClient);
 });
 
 // Delete client
-router.delete('/:id', auth, async (req, res) => {
-  try {
-    const client = await Client.findById(req.params.id);
-    if (!client) return res.status(404).json({ msg: 'Client not found' });
-    if (client.createdBy.toString() !== req.user.id) return res.status(401).json({ msg: 'Not authorized' });
-    
-    await Client.findByIdAndDelete(req.params.id);
-    res.json({ msg: 'Client removed' });
-  } catch (err) {
-    res.status(500).send('Server Error');
-  }
+router.delete('/:id', auth, (req, res) => {
+  const index = clients.findIndex(client => client._id === req.params.id && client.createdBy === req.user.id);
+  if (index === -1) return res.status(404).json({ msg: 'Client not found' });
+  
+  clients.splice(index, 1);
+  res.json({ msg: 'Client removed' });
 });
 
 module.exports = router;
