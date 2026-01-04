@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const app = express();
@@ -12,19 +11,7 @@ app.use(express.json());
 
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI)
-  .then(async () => {
-    console.log("MongoDB Connected Successfully");
-    // Create default user if not exists
-    const User = require('../models/User');
-    const user = await User.findOne({ email: 'admin@admin.com' });
-    if (!user) {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash('admin123', salt);
-      const newUser = new User({ name: 'Admin', email: 'admin@admin.com', password: hashedPassword });
-      await newUser.save();
-      console.log('Default admin user created: admin@admin.com / admin123');
-    }
-  })
+  .then(() => console.log("MongoDB Connected Successfully"))
   .catch(err => console.error("MongoDB Connection Error:", err));
 
 // Routes

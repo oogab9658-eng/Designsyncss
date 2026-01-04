@@ -1,60 +1,38 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
 const auth = require('../middleware/auth');
 
+// Predefined users (in production, use database)
+const users = [
+  { id: 1, name: 'Admin', email: 'admin@admin.com', password: 'admin123', role: 'admin' },
+  { id: 2, name: 'Client User', email: 'client@client.com', password: 'client123', role: 'client' },
+  { id: 3, name: 'Team User', email: 'team@team.com', password: 'team123', role: 'team' }
+];
+
 // @route   POST api/auth/register
-router.post('/register', async (req, res) => {
-  const { name, email, password } = req.body;
-  try {
-    let user = await User.findOne({ email });
-    if (user) return res.status(400).json({ msg: 'User already exists' });
-
-    user = new User({ name, email, password });
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
-    await user.save();
-
-    const payload = { user: { id: user.id } };
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: 360000 }, (err, token) => {
-      if (err) throw err;
-      res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
-    });
-  } catch (err) {
-    res.status(500).send('Server error');
-  }
+router.post('/register', (req, res) => {
+  res.status(400).json({ msg: 'Registration not allowed. Use predefined accounts.' });
 });
 
 // @route   POST api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', (req, res) => {
   const { email, password } = req.body;
-  try {
-    let user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ msg: 'Invalid Credentials' });
+  const user = users.find(u => u.email === email && u.password === password);
+  if (!user) return res.status(400).json({ msg: 'Invalid Credentials' });
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ msg: 'Invalid Credentials' });
-
-    const payload = { user: { id: user.id } };
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: 360000 }, (err, token) => {
-      if (err) throw err;
-      res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
-    });
-  } catch (err) {
-    res.status(500).send('Server error');
-  }
+  const payload = { user: { id: user.id, role: user.role } };
+  jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: 360000 }, (err, token) => {
+    if (err) throw err;
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+  });
 });
 
 // @route   GET api/auth/user
-router.get('/user', auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select('-password');
-    res.json(user);
-  } catch (err) {
-    res.status(500).send('Server Error');
-  }
+router.get('/user', auth, (req, res) => {
+  const user = users.find(u => u.id === req.user.id);
+  if (!user) return res.status(404).json({ msg: 'User not found' });
+  res.json(user);
 });
 
 module.exports = router;
